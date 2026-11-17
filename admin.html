@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Foodly Admin</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Playfair+Display:wght@600;700;800&display=swap" rel="stylesheet" />
+<script>tailwind.config={theme:{extend:{colors:{gold:'#F2C94C',cream:'#F4F0E8'}}}}</script>
+<style>
+body{font-family:Inter,sans-serif;background:#FAF8F5;color:#1F2937}
+.h1{font-family:'Playfair Display',Georgia,serif;font-size:26px;font-weight:700}
+.inp{width:100%;border:1px solid #E5E7EB;border-radius:10px;padding:8px 12px;font-size:13px;background:#fff;outline:none}
+.inp:focus{border-color:#F2C94C}
+.btn{background:#F2C94C;font-weight:600;font-size:13px;padding:8px 18px;border-radius:9999px;cursor:pointer}
+.btn:hover{background:#E6B82E}
+.btn2{border:1px solid #E5E7EB;background:#fff;font-size:12px;padding:5px 12px;border-radius:9999px;cursor:pointer}
+.card{background:#fff;border:1px solid #E5E7EB;border-radius:16px}
+@media print{#app,#login,.no-print{display:none!important}#modal{position:static!important;background:none!important}}
+</style>
+</head>
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="min-h-screen flex items-center justify-center p-4 bg-cream">
+  <form onsubmit="login(event)" class="card p-8 w-full max-w-sm">
+    <h1 class="h1 text-center text-[#C92A2A]">Foodly Admin</h1>
+    <p class="text-xs text-gray-500 text-center mb-5">Sign in to manage your website</p>
+    <label class="text-xs font-semibold">Email<input id="le" type="email" required class="inp mt-1 mb-3 font-normal" placeholder="admin@foodly.com" /></label>
+    <label class="text-xs font-semibold">Password<input id="lp" type="password" required class="inp mt-1 font-normal" /></label>
+    <p id="lerr" class="hidden text-xs text-red-600 mt-2">Wrong email or password.</p>
+    <button class="btn w-full mt-5">Sign in</button>
+    </form>
+</div>
+
+<!-- APP -->
+<div id="app" class="hidden min-h-screen flex flex-col lg:flex-row">
+  <aside class="lg:w-56 bg-cream p-4 lg:min-h-screen border-b lg:border-r border-[#E6DFD2]">
+    <p class="h1 text-[#C92A2A] mb-3">Foodly</p>
+    <nav id="nav" class="flex flex-wrap lg:block gap-1 lg:space-y-1"></nav>
+    <div class="mt-3 flex lg:block gap-2 lg:space-y-2">
+      <a href="index.html" target="_blank" class="btn2 inline-block lg:block text-center">View website</a>
+      <button class="btn2 lg:w-full" onclick="logout()">Log out</button>
+    </div>
+  </aside>
+  <main id="main" class="flex-1 p-4 sm:p-6 min-w-0"></main>
+</div>
+
+<div id="modal" class="fixed inset-0 z-50 hidden items-center justify-center p-4 bg-black/45"></div>
+
+<script>
+const K={m:'foodly_menu',o:'foodly_orders',a:'foodly_admin',s:'foodly_session'};
+const ld=(k,d)=>{try{const v=JSON.parse(localStorage.getItem(k));return v==null?d:v}catch(e){return d}};
+const sv=(k,v)=>localStorage.setItem(k,JSON.stringify(v));
+const $=s=>document.querySelector(s);
+const e=s=>String(s).replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const money=n=>'$'+(+n).toFixed(2);
+const U='https://images.unsplash.com/photo-';
+const FB={Burgers:'burger',Pizza:'pizza',Chicken:'wings',Drinks:'drink',Desserts:'dessert',Sides:'fries'};
+const SEED=[
+['Cheesy Beef Burger','NEW','Double patty, cheddar, house sauce',4.7,86,'12-15 min',8.99,'Burgers','Spicy','SNACKS,Dinner','1568901346375-23c9450c58cd'],
+['Pepperoni Supreme','NEW','Loaded pepperoni, mozzarella, basil',4.8,64,'18-22 min',12.49,'Pizza','Spicy','SNACKS,Dinner','1628840042765-356cda07504e'],
+['Crispy Wing Box','','8pc spicy buffalo wings, ranch dip',4.6,102,'15-18 min',9.99,'Chicken','Spicy,Gluten-Free','SNACKS,Late Night','1567620832903-9fc6debc209f'],
+['Cold Brew Cooler','','Iced cold brew, vanilla foam',4.9,41,'5-8 min',4.49,'Drinks','Vegetarian,Gluten-Free','Breakfast,SNACKS','1517701550927-30cf4ba1dba5'],
+['Classic Cheeseburger','BESTSELLER','Beef patty, cheddar, pickles',4.8,412,'12-15 min',7.49,'Burgers','','SNACKS,Dinner','1550547660-d9450f859349'],
+['Margherita Pizza','','San marzano tomato, fresh mozzarella',4.7,289,'20-25 min',11.99,'Pizza','Vegetarian','Dinner,SNACKS','1574071318508-1cdbab80d002'],
+['Loaded Fries','','Cheese sauce, bacon bits, jalapeños',4.6,198,'10-12 min',6.49,'Sides','Spicy,Gluten-Free','SNACKS,Late Night','1576107232684-1279f390859f'],
+['Chocolate Shake','','Rich chocolate, whipped cream',4.9,156,'5-8 min',5.49,'Drinks','Vegetarian,Gluten-Free','SNACKS,Late Night','1572490122747-3968b75cc699'],
+['Spicy Chicken Sandwich','','Crispy fillet, spicy mayo, slaw',4.7,133,'14-18 min',8.49,'Chicken','Spicy','SNACKS,Dinner','1606755962773-d324e0a13086'],
+['Chicken Sandwich','','Smoky BBQ chicken, crispy bread',4.8,97,'14-18 min',9.99,'Chicken','','Breakfast,SNACKS','1528735602780-2552fd46c7af'],
+['Garlic Bread Sticks','TRENDING','Toasted, garlic butter, parmesan',4.5,74,'8-10 min',5.99,'Sides','Vegetarian','SNACKS,Dinner','1619535860434-ba1d8fa12536'],
+['Mango Lassi','','Fresh mango, yogurt, cardamom',4.9,58,'5-8 min',4.99,'Drinks','Vegetarian,Gluten-Free','Breakfast,SNACKS','1546173159-315724a31696'],
+['Four Cheese Pizza','','Mozzarella, gouda, parmesan, blue',4.6,45,'20-25 min',13.49,'Pizza','Vegetarian','Dinner,SNACKS','1513104890138-7c749659a591'],
+['Grilled Chicken Wrap','','Grilled fillet, lettuce, garlic sauce',4.7,68,'12-15 min',7.99,'Chicken','','SNACKS,Dinner','1626700051175-6818013e1d4f'],
+['Choco Lava Cake','NEW','Warm molten center, vanilla scoop',4.8,39,'10-12 min',6.99,'Desserts','Vegetarian','SNACKS,Late Night','1624353365286-3f8d62daad51'],
+['Onion Rings','','Crispy battered, chipotle dip',4.5,52,'8-10 min',4.99,'Sides','Vegetarian,Vegan','SNACKS,Late Night','1639024471283-03518883512d']
+];
+const seedMenu=()=>SEED.map((r,n)=>({id:n+1,name:r[0],badge:r[1],description:r[2],rating:r[3],reviews:r[4],time:r[5],price:r[6],category:r[7],dietary:r[8]?r[8].split(','):[],mealTime:r[9].split(','),favorited:[1,8,10,14,16].includes(n+1),popularRank:n+1,image:U+r[10]+'?auto=format&fit=crop&w=500&q=85',fallbackType:FB[r[7]]||'burger'}));
+
+let menu=[],rm=[],orders=[],tab='dash',pos={cart:[],cat:'All',q:'',disc:0,pay:'Cash',cust:''};
+const TABS=[['dash','Dashboard'],['menu','Menu items'],['pos','POS'],['orders','Orders'],['set','Settings']];
+
+/* ---------- auth + Firebase data ---------- */
+async function login(ev){ev.preventDefault();$('#lerr').classList.add('hidden');
+  try{await FB.signIn($('#le').value.trim(),$('#lp').value)}catch(x){$('#lerr').classList.remove('hidden')}}
+function logout(){FB.signOut()}
+async function onAuth(u){
+  $('#login').classList.toggle('hidden',!!u);$('#app').classList.toggle('hidden',!u);
+  if(u){try{await loadAll()}catch(x){alert('Could not load data: '+x.message)}go('dash')}}
+async function loadAll(){
+  menu=await FB.getAll('menu');orders=await FB.getAll('orders');
+  if(!menu.length){menu=seedMenu();await pushMenu()}
+  rm=menu.map(i=>String(i.id));
+  menu.sort((a,b)=>a.popularRank-b.popularRank);orders.sort((a,b)=>b.time-a.time)}
+async function pushMenu(){const ids=menu.map(i=>String(i.id));await FB.batchMenu(menu,rm.filter(x=>!ids.includes(x)));rm=ids}
+async function delOrder(x){const o=orders.splice(x,1)[0];await FB.delOrder(String(o.id));vOrders()}
+async function clearOrders(){if(!confirm('Delete ALL orders?'))return;const a=orders;orders=[];await Promise.all(a.map(o=>FB.delOrder(String(o.id))));vOrders()}
+
+/* ---------- shell ---------- */
+function go(t){tab=t;
+  $('#nav').innerHTML=TABS.map(([k,l])=>`<button onclick="go('${k}')" class="px-4 py-2.5 rounded-xl text-sm lg:w-full lg:text-left ${k==t?'bg-gold font-semibold':'hover:bg-white'}">${l}</button>`).join('');
+  ({dash:vDash,menu:vMenu,pos:vPos,orders:vOrders,set:vSet})[t]()}
+function modal(h){const m=$('#modal');m.innerHTML=`<div class="bg-white rounded-2xl p-6 w-full max-w-xl max-h-[90vh] overflow-y-auto">${h}</div>`;m.classList.remove('hidden');m.classList.add('flex')}
+function closeM(){const m=$('#modal');m.classList.add('hidden');m.classList.remove('flex')}
+
+/* ---------- dashboard ---------- */
+function vDash(){
+  const rev=orders.reduce((a,o)=>a+o.total,0),td=new Date().toDateString();
+  const tr=orders.filter(o=>new Date(o.time).toDateString()==td).reduce((a,o)=>a+o.total,0);
+  const cnt={};orders.forEach(o=>o.items.forEach(i=>cnt[i.name]=(cnt[i.name]||0)+i.qty));
+  const top=Object.entries(cnt).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  $('#main').innerHTML=`<h1 class="h1 mb-4">Dashboard</h1>
+  <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">${[['Menu items',menu.length],['Orders',orders.length],['Total sales',money(rev)],["Today's sales",money(tr)]].map(([l,v])=>`<div class="card p-4"><p class="text-xs text-gray-500">${l}</p><p class="text-2xl font-bold mt-1">${v}</p></div>`).join('')}</div>
+  <div class="card p-5 mt-5 max-w-md"><h2 class="font-bold mb-2">Top sellers</h2>${top.length?top.map(([n,c])=>`<div class="flex justify-between text-sm py-1"><span>${e(n)}</span><b>${c}</b></div>`).join(''):'<p class="text-sm text-gray-500">No sales yet.</p>'}</div>`}
+
+/* ---------- menu CRUD ---------- */
+function vMenu(){
+  $('#main').innerHTML=`<div class="flex justify-between items-center mb-4"><h1 class="h1">Menu items (${menu.length})</h1><button class="btn" onclick="form()">+ Add item</button></div>
+  <div class="card overflow-x-auto"><table class="w-full text-sm"><thead><tr class="text-left text-xs text-gray-500"><th class="p-3">Item</th><th>Category</th><th>Price</th><th>Rating</th><th></th></tr></thead><tbody>
+  ${menu.map(i=>`<tr class="border-t"><td class="p-3 flex items-center gap-3"><img src="${e(i.image)}" onerror="this.style.visibility='hidden'" class="w-10 h-10 rounded-lg object-cover bg-cream"><span><b>${e(i.name)}</b>${i.badge?` <span class="text-[10px] bg-gold px-1.5 rounded">${e(i.badge)}</span>`:''}<br><span class="text-xs text-gray-400">${e(i.description)}</span></span></td><td>${e(i.category)}</td><td>${money(i.price)}</td><td>${i.rating}</td><td class="text-right pr-3 whitespace-nowrap"><button class="btn2" onclick="form(${i.id})">Edit</button> <button class="btn2 text-red-600" onclick="del(${i.id})">Delete</button></td></tr>`).join('')}
+  </tbody></table></div>`}
+const F=[['name','Name'],['description','Description'],['category','Category (Burgers, Pizza, Chicken, Drinks, Desserts, Sides)'],['price','Price','number'],['rating','Rating (0-5)','number'],['reviews','Reviews','number'],['time','Prep time (e.g. 12-15 min)'],['badge','Badge (NEW, BESTSELLER... optional)'],['image','Image URL'],['dietary','Dietary (comma separated: Spicy, Vegan...)'],['mealTime','Meal time (comma separated: Breakfast, SNACKS, Dinner, Late Night)']];
+function form(id){const i=menu.find(x=>x.id==id)||{};
+  modal(`<h2 class="font-bold text-lg mb-3">${id?'Edit':'Add'} item</h2><div class="grid sm:grid-cols-2 gap-3">${F.map(([k,l,t])=>`<label class="text-xs font-semibold ${k=='description'||k=='image'?'sm:col-span-2':''}">${l}<input id="f_${k}" type="${t||'text'}" step="any" class="inp mt-1 font-normal" value="${e(Array.isArray(i[k])?i[k].join(', '):(i[k]??''))}"></label>`).join('')}</div><div class="flex justify-end gap-2 mt-4"><button class="btn2" onclick="closeM()">Cancel</button><button class="btn" onclick="save(${id||0})">Save</button></div>`)}
+async function save(id){
+  const g=k=>$('#f_'+k).value.trim(),l=k=>g(k).split(',').map(s=>s.trim()).filter(Boolean);
+  if(!g('name')||!g('category')||isNaN(parseFloat(g('price')))){alert('Name, category and price are required');return}
+  const o={name:g('name'),description:g('description'),category:g('category'),price:+parseFloat(g('price')).toFixed(2),rating:+g('rating')||4.5,reviews:+g('reviews')||0,time:g('time')||'10-15 min',badge:g('badge').toUpperCase(),image:g('image'),dietary:l('dietary'),mealTime:l('mealTime')};
+  o.fallbackType=FB[o.category]||'burger';
+  if(id)Object.assign(menu.find(x=>x.id==id),o);
+  else{const m=Math.max(0,...menu.map(x=>x.id));menu.push({...o,id:m+1,favorited:false,popularRank:m+1})}
+  try{await pushMenu()}catch(x){alert('Save failed: '+x.message);return}closeM();vMenu()}
+async function del(id){if(!confirm('Delete this item?'))return;menu=menu.filter(x=>x.id!=id);try{await pushMenu()}catch(x){alert('Delete failed: '+x.message)}vMenu()}
+
+/* ---------- POS ---------- */
+function vPos(){
+  const cats=['All',...new Set(menu.map(i=>i.category))];
+  $('#main').innerHTML=`<div class="flex flex-col lg:flex-row gap-5"><div class="flex-1 min-w-0"><h1 class="h1 mb-3">POS</h1>
+  <input id="pq" class="inp mb-3" placeholder="Search item..." oninput="pos.q=this.value;pgrid()">
+  <div class="flex flex-wrap gap-2 mb-3">${cats.map(c=>`<button class="btn2 ${pos.cat==c?'!bg-gold font-semibold':''}" data-c="${e(c)}" onclick="pos.cat=this.dataset.c;vPos()">${e(c)}</button>`).join('')}</div>
+  <div id="pgrid" class="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3"></div></div>
+  <div class="card p-4 w-full lg:w-[340px] self-start"><h2 class="font-bold mb-2">Current sale</h2><div id="pcart"></div></div></div>`;
+  $('#pq').value=pos.q;pgrid();pcart()}
+function pgrid(){const q=pos.q.toLowerCase();
+  $('#pgrid').innerHTML=menu.filter(i=>(pos.cat=='All'||i.category==pos.cat)&&i.name.toLowerCase().includes(q)).map(i=>`<button onclick="padd(${i.id})" class="card p-2 text-left hover:border-gold"><img src="${e(i.image)}" onerror="this.style.visibility='hidden'" class="h-20 w-full object-cover rounded-lg bg-cream"><p class="text-[13px] font-semibold mt-1.5 leading-tight">${e(i.name)}</p><p class="text-xs text-gray-500">${money(i.price)}</p></button>`).join('')}
+function padd(id){const i=menu.find(x=>x.id==id),l=pos.cart.find(x=>x.id==id);
+  if(l)l.qty++;else pos.cart.push({id:i.id,name:i.name,price:i.price,qty:1});pcart()}
+function pq(x,d){pos.cart[x].qty+=d;if(pos.cart[x].qty<=0)pos.cart.splice(x,1);pcart()}
+function calc(){const s=pos.cart.reduce((a,l)=>a+l.price*l.qty,0),d=+(s*pos.disc/100).toFixed(2);return{s,d,t:+(s-d).toFixed(2)}}
+function ptot(){const{s,d,t}=calc();
+  $('#ptot').innerHTML=`<div class="flex justify-between text-gray-500"><span>Subtotal</span><span>${money(s)}</span></div><div class="flex justify-between text-gray-500"><span>Discount</span><span>-${money(d)}</span></div><div class="flex justify-between font-bold text-base mt-1"><span>Total</span><span>${money(t)}</span></div>`}
+function pcart(){const c=pos.cart;
+  $('#pcart').innerHTML=(c.length?c.map((l,x)=>`<div class="flex items-center justify-between text-sm py-1.5 border-b"><span class="flex-1 pr-2">${e(l.name)}<br><span class="text-xs text-gray-500">${money(l.price)}</span></span><span class="flex items-center gap-1"><button class="btn2 !px-2" onclick="pq(${x},-1)">-</button><b class="w-5 text-center">${l.qty}</b><button class="btn2 !px-2" onclick="pq(${x},1)">+</button></span></div>`).join(''):'<p class="text-sm text-gray-500 py-4">Tap an item to add it.</p>')
+  +`<div class="grid grid-cols-2 gap-2 mt-3"><label class="text-xs font-semibold">Discount %<input type="number" min="0" max="100" class="inp mt-1 font-normal" value="${pos.disc}" oninput="pos.disc=Math.min(100,Math.max(0,+this.value||0));ptot()"></label><label class="text-xs font-semibold">Payment<select class="inp mt-1 font-normal" onchange="pos.pay=this.value">${['Cash','Card','bKash','Nagad'].map(p=>`<option ${p==pos.pay?'selected':''}>${p}</option>`).join('')}</select></label></div>
+  <input class="inp mt-2" placeholder="Customer name (optional)" value="${e(pos.cust)}" oninput="pos.cust=this.value"><div id="ptot" class="mt-3 text-sm"></div>
+  <div class="flex gap-2 mt-3"><button class="btn2" onclick="pos.cart=[];pcart()">Clear</button><button class="btn flex-1" onclick="sale()">Complete sale</button></div>`;
+  ptot()}
+function sale(){
+  if(!pos.cart.length)return alert('Cart is empty');
+  const{s,d,t}=calc();
+  const o={id:'POS-'+Date.now().toString().slice(-6),time:Date.now(),source:'POS',items:pos.cart.map(l=>({...l})),subtotal:s,discount:d,total:t,pay:pos.pay,customer:pos.cust};
+  orders.unshift(o);FB.setOrder(o).catch(x=>alert('Order not saved: '+x.message));pos.cart=[];pos.disc=0;pos.cust='';pcart();receipt(o)}
+function receipt(o){
+  modal(`<div class="text-sm max-w-xs mx-auto"><h2 class="font-serif text-xl font-bold text-center">Foodly Kitchen</h2><p class="text-center text-xs text-gray-500 mb-3">${e(o.id)} · ${new Date(o.time).toLocaleString()}${o.customer?' · '+e(o.customer):''}</p>
+  ${o.items.map(l=>`<div class="flex justify-between"><span>${l.qty} × ${e(l.name)}</span><span>${money(l.price*l.qty)}</span></div>`).join('')}<hr class="my-2">
+  <div class="flex justify-between"><span>Subtotal</span><span>${money(o.subtotal)}</span></div><div class="flex justify-between"><span>Discount</span><span>-${money(o.discount)}</span></div><div class="flex justify-between font-bold"><span>Total (${e(o.pay)})</span><span>${money(o.total)}</span></div><p class="text-center text-xs text-gray-400 mt-3">Thank you!</p></div>
+  <div class="flex justify-end gap-2 mt-4 no-print"><button class="btn2" onclick="closeM()">Close</button><button class="btn" onclick="window.print()">Print</button></div>`)}
+
+/* ---------- orders ---------- */
+function vOrders(){
+  $('#main').innerHTML=`<div class="flex justify-between items-center mb-4"><h1 class="h1">Orders (${orders.length})</h1><button class="btn2 text-red-600" onclick="clearOrders()">Clear all</button></div>
+  <div class="card divide-y">${orders.length?orders.map((o,x)=>`<div class="p-3 flex items-center justify-between gap-3 text-sm"><div class="min-w-0"><b>${e(o.id)}</b> <span class="text-xs px-2 py-0.5 rounded bg-cream">${e(o.source)}</span><br><span class="text-xs text-gray-500">${new Date(o.time).toLocaleString()} · ${o.items.map(l=>l.qty+'× '+e(l.name)).join(', ')}</span></div><div class="text-right whitespace-nowrap"><b>${money(o.total)}</b><br><button class="text-xs text-blue-600" onclick="receipt(orders[${x}])">Receipt</button> <button class="text-xs text-red-600" onclick="delOrder(${x})">Delete</button></div></div>`).join(''):'<p class="p-6 text-sm text-gray-500">No orders yet.</p>'}</div>`}
+
+/* ---------- settings ---------- */
+function vSet(){
+  $('#main').innerHTML=`<h1 class="h1 mb-4">Settings</h1>
+  <div class="card p-5 max-w-md space-y-3"><h2 class="font-bold">Admin login</h2><p class="text-xs text-gray-500">${e(FB.email())}</p><button class="btn2" onclick="FB.reset(FB.email()).then(()=>alert('Password reset email sent'))">Send password reset email</button></div>
+  <div class="card p-5 max-w-md mt-4 space-y-2"><h2 class="font-bold">Data</h2><button class="btn2" onclick="backup()">Download backup (JSON)</button><br><button class="btn2 text-red-600" onclick="resetMenu()">Reset menu to default</button></div>`}
+function backup(){const b=new Blob([JSON.stringify({menu,orders},null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='foodly-backup.json';a.click()}
+async function resetMenu(){if(!confirm('Replace the menu with the original 16 items?'))return;menu=seedMenu();await pushMenu();alert('Menu reset')}
+
+</script>
+<script type="module">
+import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,signOut,sendPasswordResetEmail} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js';
+import {getFirestore,collection,getDocs,doc,setDoc,deleteDoc,writeBatch} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
+// >>> PASTE YOUR firebaseConfig HERE (Firebase console > Project settings > Your apps) <<<
+const firebaseConfig={apiKey:"AIzaSyCjbt4LN8ai1m_l2xeqLGXOTPvE1F6NhQs",authDomain:"food-v1-bad1d.firebaseapp.com",projectId:"food-v1-bad1d",appId:"1:1098500616750:web:afc54cfd52025f135ba5bf"};
+const app=initializeApp(firebaseConfig),auth=getAuth(app),db=getFirestore(app);
+window.FB={
+  signIn:(e,p)=>signInWithEmailAndPassword(auth,e,p),
+  signOut:()=>signOut(auth),
+  reset:e=>sendPasswordResetEmail(auth,e),
+  email:()=>auth.currentUser?auth.currentUser.email:'',
+  getAll:async c=>(await getDocs(collection(db,c))).docs.map(d=>d.data()),
+  setOrder:o=>setDoc(doc(db,'orders',String(o.id)),o),
+  delOrder:id=>deleteDoc(doc(db,'orders',id)),
+  batchMenu:async(items,del)=>{const b=writeBatch(db);items.forEach(i=>b.set(doc(db,'menu',String(i.id)),i));del.forEach(id=>b.delete(doc(db,'menu',id)));await b.commit()}
+};
+onAuthStateChanged(auth,u=>onAuth(u));
+</script>
+</body>
+</html>
