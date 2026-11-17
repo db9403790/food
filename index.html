@@ -1559,7 +1559,15 @@
   <script type="module">
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js';
 import {getFirestore,collection,getDocs,doc,setDoc} from 'https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js';
-const firebaseConfig={apiKey:"AIzaSyCjbt4LN8ai1m_l2xeqLGXOTPvE1F6NhQs",authDomain:"food-v1-bad1d.firebaseapp.com",projectId:"food-v1-bad1d",appId:"1:1098500616750:web:afc54cfd52025f135ba5bf"};
+const firebaseConfig = {
+  apiKey: "AIzaSyCjbt4LN8ai1m_l2xeqLGXOTPvE1F6NhQs",
+  authDomain: "food-v1-bad1d.firebaseapp.com",
+  projectId: "food-v1-bad1d",
+  storageBucket: "food-v1-bad1d.firebasestorage.app",
+  messagingSenderId: "1098500616750",
+  appId: "1:1098500616750:web:afc54cfd52025f135ba5bf",
+  measurementId: "G-G16EPFHHXC"
+};
 const db=getFirestore(initializeApp(firebaseConfig));
 window.saveWebOrder=o=>setDoc(doc(db,'orders',o.id),o);
 try{
